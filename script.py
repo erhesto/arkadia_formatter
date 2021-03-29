@@ -144,9 +144,10 @@ class Dialogue(Section):
 
 
 def main():
-    filename = os.environ['FILENAME']
+    filename = os.environ['FILENAME2READ']
+    border = os.environ.get('BORDER', '')
     raw_letter = open(filename).read()
-    formatter = Formatter(border='')
+    formatter = Formatter(border=border)
     print(str(Letter(raw_letter, formatter)))
 
 
