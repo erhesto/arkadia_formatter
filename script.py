@@ -1,4 +1,6 @@
 import os
+import random
+import itertools
 
 
 class Formatter:
@@ -8,13 +10,15 @@ class Formatter:
         right_margin_size=2, 
         width=80, 
         border='|', 
-        indent=2
+        indent=2,
+        rjust=True
     ):
         self.left_margin_size = left_margin_size
         self.right_margin_size = right_margin_size
         self.width = width
         self.border = border
         self.indent = indent * ' '
+        self.rjust = rjust
 
     @property
     def left_margin(self):
@@ -36,7 +40,23 @@ class Formatter:
     def margins(self):
         return self.left_margin_size + self.right_margin_size
 
-    def make_line(self, line):
+    def make_line(self, line, last_line=False):
+        text_length = len(''.join(line))
+        spaces = (len(line) - 1) * [" "]
+
+        if not self.rjust or not spaces or last_line:
+            return ' '.join(line).ljust(self.inner_width)
+    
+        counter = len(line) - 1
+        while counter + text_length < self.inner_width:
+            spaces[random.randrange(0, len(spaces))] += " "
+            counter += 1
+
+        return "".join(
+            itertools.chain.from_iterable(itertools.zip_longest(line, spaces, fillvalue=""))
+        )
+
+    def make_output_line(self, line):
         return (
             f'{self.border}'
             f'{self.left_margin}'
@@ -94,7 +114,7 @@ class Section:
         return bool(self._raw_line)
 
     def __str__(self):
-        return '\n'.join(map(self._formatter.make_line, self._lines))
+        return '\n'.join(map(self._formatter.make_output_line, self._lines))
 
     @property
     def _lines(self):
@@ -116,7 +136,8 @@ class Section:
         else:
             lines.append(current_line)
 
-        whole_lines = [' '.join(line).ljust(self._formatter.inner_width) for line in lines]
+        whole_lines = [self._formatter.make_line(line) for line in lines[:-1]]
+        whole_lines += [self._formatter.make_line(lines[-1], last_line=True)]
         return whole_lines
 
 
@@ -146,11 +167,11 @@ class Dialogue(Section):
 def main():
     filename = os.environ['FILENAME2READ']
     border = os.environ.get('BORDER', '')
+    width = int(os.environ.get('WIDTH', 80))
     raw_letter = open(filename).read()
-    formatter = Formatter(border=border)
+    formatter = Formatter(border=border, width=width)
     print(str(Letter(raw_letter, formatter)))
 
 
 if __name__ == '__main__':
     main()
-
